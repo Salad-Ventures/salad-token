@@ -7,12 +7,13 @@ import "./ISaladBowl.sol";
 import "./ISaladReward.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract SaladBowlP is ISaladBowl, Ownable, Pausable {
+contract SaladBowlP is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   using Math for uint256;
 
   // staked ERC20 asset
@@ -50,7 +51,7 @@ contract SaladBowlP is ISaladBowl, Ownable, Pausable {
   // @dev deposits `amount` of underlying asset into vault and records
   // the balance of the staker. Any pending reward token is harvested
   // during the deposit.
-  function deposit(uint256 amount) whenNotPaused public virtual {
+  function deposit(uint256 amount) whenNotPaused nonReentrant public virtual {
     address account = _msgSender();
 
     _withdrawRewards(account);
@@ -65,7 +66,7 @@ contract SaladBowlP is ISaladBowl, Ownable, Pausable {
   // @dev withdraws `amount` of underlying asset from vault and updates
   // the balance of the staker. Any pending reward token is harvested
   // during the withdraw. 
-  function withdraw(uint256 amount) whenNotPaused public virtual {
+  function withdraw(uint256 amount) whenNotPaused nonReentrant public virtual {
     address account = _msgSender();
 
     _withdrawRewards(account);
@@ -78,7 +79,7 @@ contract SaladBowlP is ISaladBowl, Ownable, Pausable {
   }
 
   // @dev harvests all pending reward token for staker.
-  function harvest() whenNotPaused public virtual {
+  function harvest() whenNotPaused nonReentrant public virtual {
     _withdrawRewards(_msgSender());
   }
 

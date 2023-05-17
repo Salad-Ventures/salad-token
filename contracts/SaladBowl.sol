@@ -7,12 +7,13 @@ import "./ISaladBowl.sol";
 import "./ISaladReward.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract SaladBowl is ISaladBowl, Ownable, Pausable {
+contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   using Math for uint256;
 
   uint256 private constant REWARD_PRECISION = 1e12;
@@ -54,7 +55,7 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable {
   // @dev deposits `amount` of underlying asset into vault and records
   // the balance of the staker. Any pending reward token is harvested
   // during the deposit.
-  function deposit(uint256 amount) whenNotPaused public virtual {
+  function deposit(uint256 amount) whenNotPaused nonReentrant public virtual {
     address account = _msgSender();
 
     _withdrawRewards(account);
@@ -69,7 +70,7 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable {
   // @dev withdraws `amount` of underlying asset from vault and updates
   // the balance of the staker. Any pending reward token is harvested
   // during the withdraw. 
-  function withdraw(uint256 amount) whenNotPaused public virtual {
+  function withdraw(uint256 amount) whenNotPaused nonReentrant public virtual {
     address account = _msgSender();
 
     _withdrawRewards(account);
@@ -82,14 +83,14 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable {
   }
 
   // @dev harvests all pending reward token for staker.
-  function harvest() whenNotPaused public virtual {
+  function harvest() whenNotPaused nonReentrant public virtual {
     _withdrawRewards(_msgSender());
   }
 
   // @dev withdraws staker's entire balance of underlying asset from
   // vault and updates the balance of the staker. Pending rewards will
   // not be harvested, and can be executed when contract is paused.
-  function emergencyWithdraw() public virtual {
+  function emergencyWithdraw() nonReentrant public virtual {
     address account = _msgSender();
 
     uint256 amount = _balances[account];
