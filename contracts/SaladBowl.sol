@@ -140,15 +140,20 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable {
   // and set `lastRewardBlock` to current block.
   function _updateRewards() internal {
     uint currentBlock = block.number;
+
+    // no need to update again if already done for the block.
     if (lastRewardBlock == currentBlock) return;
 
-    uint length = _stakers.length;
-    for (uint256 i = 0; i < length; i++) {
-      uint256 balance = _balances[_stakers[i]];
-      uint256 share = (balance * REWARD_PRECISION) / _totalSupply;
-      uint blocks = currentBlock - lastRewardBlock;
-      uint256 rewards = (blocks * rewardPerBlock * share) / REWARD_PRECISION;
-      _rewardDebts[_stakers[i]] += rewards;
+    // only update reward debts if necessary.
+    if (rewardPerBlock > 0 && _totalSupply > 0) {
+      uint length = _stakers.length;
+      for (uint256 i = 0; i < length; i++) {
+        uint256 balance = _balances[_stakers[i]];
+        uint256 share = (balance * REWARD_PRECISION) / _totalSupply;
+        uint blocks = currentBlock - lastRewardBlock;
+        uint256 rewards = (blocks * rewardPerBlock * share) / REWARD_PRECISION;
+        _rewardDebts[_stakers[i]] += rewards;
+      }
     }
 
     lastRewardBlock = currentBlock;
