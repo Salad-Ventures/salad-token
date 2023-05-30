@@ -4,6 +4,9 @@ import { run } from "./helper";
 
 
 
+/**
+ * @deprecated SALD is minted on deploy
+ */
 run(async () => {
   const [owner] = await ethers.getSigners();
   const saladCF = await ethers.getContractFactory("SaladToken");
@@ -12,6 +15,6 @@ run(async () => {
 
   const saladContract = saladCF.attach(process.env.ADDR_SALAD_TOKEN);
 
-  const tx = await saladContract.connect(owner).mint(owner.address, new BigNumber(10000).shiftedBy(18).toString(10));
+  const tx = await saladContract.connect(owner).transfer(owner.address, new BigNumber(10000).shiftedBy(18).toString(10));
   console.log(tx);
 });

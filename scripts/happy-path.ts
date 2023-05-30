@@ -18,11 +18,11 @@ run(async () => {
   const amount1 = new BigNumber(100).shiftedBy(decimals);
   const amount2 = new BigNumber(200).shiftedBy(decimals);
 
-  await tokenContract.connect(owner).mint(wallet1.address, amount1.toString(10));
+  await tokenContract.connect(owner).transfer(wallet1.address, amount1.toString(10));
   await tokenContract.connect(wallet1).approve(bowlContract.address, amount1.toString(10));
   await bowlContract.connect(wallet1).deposit(amount1.toString(10));
 
-  await tokenContract.connect(owner).mint(wallet2.address, amount2.toString(10));
+  await tokenContract.connect(owner).transfer(wallet2.address, amount2.toString(10));
   await tokenContract.connect(wallet2).approve(bowlContract.address, amount2.toString(10));
   await bowlContract.connect(wallet2).deposit(amount2.toString(10));
 

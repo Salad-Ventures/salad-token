@@ -10,10 +10,10 @@ contract SaladToken is Ownable, ERC20, ERC20Burnable, ERC20Pausable {
   string private constant NAME = "Salad";
   string private constant SYMBOL = "SALD";
 
-  constructor() ERC20(NAME, SYMBOL) {}
+  uint public TOTAL_SUPPLY = 1_680_000_000e18; // 1.68b SALD
 
-  function mint(address to, uint256 amount) onlyOwner public virtual {
-    _mint(to, amount);
+  constructor() ERC20(NAME, SYMBOL) {
+    _mint(owner(), TOTAL_SUPPLY);
   }
 
   function _beforeTokenTransfer(
