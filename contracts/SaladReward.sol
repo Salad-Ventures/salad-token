@@ -9,8 +9,8 @@ import "./ISaladBowl.sol";
 import "./ISaladReward.sol";
 
 contract SaladReward is ISaladReward, Ownable, ERC20, ERC20Burnable, ERC20Pausable {
-  string private constant NAME = "SaladReward";
-  string private constant SYMBOL = "SLD";
+  string private constant NAME = "SaladGreens";
+  string private constant SYMBOL = "GREENS";
 
   ISaladBowl private _saladBowl;
 
