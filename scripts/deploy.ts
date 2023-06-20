@@ -6,7 +6,7 @@ run(async () => {
   const rewardContract = await deployContract("SaladReward");
 
   const height = await ethers.provider.getBlockNumber();
-  const bowlContract = await deployContract("SaladBowl", tokenContract.address, rewardContract.address,
+  const bowlContract = await deployContract("SaladBowl",
     tokenContract.address,
     rewardContract.address,
     1e9,
