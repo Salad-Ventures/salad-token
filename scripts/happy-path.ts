@@ -45,6 +45,7 @@ run(async () => {
   await bowlContract.connect(wallet1).withdraw(amount1.toString(10));
   await bowlContract.connect(wallet2).harvest();
 
+  console.log("height", await ethers.provider.getBlockNumber());
   console.log("1 token balance", await tokenContract.balanceOf(wallet1.address));
   console.log("1 vault balance", await bowlContract.balanceOf(wallet1.address));
   console.log("1 reward balance", await rewardContract.balanceOf(wallet1.address));
@@ -52,6 +53,13 @@ run(async () => {
   console.log("2 token balance", await tokenContract.balanceOf(wallet2.address));
   console.log("2 vault balance", await bowlContract.balanceOf(wallet2.address));
   console.log("2 reward balance", await rewardContract.balanceOf(wallet2.address));
+  
+
+  await networkHelpers.mine(5000);
+  await bowlContract.connect(wallet2).harvest();
 
   console.log("height", await ethers.provider.getBlockNumber());
+  console.log("2 token balance", await tokenContract.balanceOf(wallet2.address));
+  console.log("2 vault balance", await bowlContract.balanceOf(wallet2.address));
+  console.log("2 reward balance", await rewardContract.balanceOf(wallet2.address));
 });

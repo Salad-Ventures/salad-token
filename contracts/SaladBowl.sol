@@ -41,14 +41,11 @@ contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
   // total asset deposited
   uint256 private _totalSupply;
 
-  // array of staker addresses
-  address[] private _stakers;
-
-  // index of staker address, for gas optimisation
-  mapping(address => uint) private _stakerIndex;
+  // total asset deposited
+  uint256 private _rewardPerShare;
 
   // reward owed to each staker up to lastRewardBlock
-  mapping(address => uint256) private _rewardDebts;
+  mapping(address => uint256) private _rewardDebtPerShare;
 
   constructor(
     IERC20 asset_, 
@@ -132,8 +129,10 @@ contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
   }
 
   // @dev reward tokens owed to a given `account` up to `lastRewardBlock`.
-  function rewardDebt(address account) public view virtual returns (uint256) {
-    return _rewardDebts[account];
+  function pendingRewards(address account) public view virtual returns (uint256) {
+    uint256 shares = _balances[account];
+    uint256 pendingRewardPerShare = _rewardPerShare - _rewardDebtPerShare[account];
+    return shares * pendingRewardPerShare / REWARD_PRECISION;
   }
 
   // @dev calculate and update every staker's reward debt up to current block,
@@ -145,26 +144,20 @@ contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
       // skip update again if already done for the block.
       lastRewardBlock == currentBlock 
 
-      // skip update if final reward emission already included
+      // skip update if final reward emission already included.
       || lastRewardBlock >= rewardEndBlock
 
-      // skip update if reward not started
+      // skip update if reward not started.
       || currentBlock < rewardStartBlock
     ) return;
 
     uint rewardUntilBlock = Math.min(currentBlock, rewardEndBlock);
 
-    // only update reward debts if necessary.
-    if (rewardPerBlock > 0 && _totalSupply > 0) {
-      uint length = _stakers.length;
+    // skip update on first deposit.
+    if (_totalSupply > 0) {
       uint blocks = rewardUntilBlock - Math.max(lastRewardBlock, rewardStartBlock);
-
-      for (uint256 i = 0; i < length; i++) {
-        uint256 balance = _balances[_stakers[i]];
-        uint256 share = (balance * REWARD_PRECISION) / _totalSupply;
-        uint256 rewards = (blocks * rewardPerBlock * share) / REWARD_PRECISION;
-        _rewardDebts[_stakers[i]] += rewards;
-      }
+      uint256 newReward = blocks * rewardPerBlock;
+      _rewardPerShare = _rewardPerShare + (newReward * REWARD_PRECISION / _totalSupply);
     }
 
     lastRewardBlock = rewardUntilBlock;
@@ -174,20 +167,18 @@ contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
   function _withdrawRewards(address account) internal {
     _updateRewards();
 
-    uint256 rewardOwed = _rewardDebts[account];
-    if (rewardOwed == 0) return;
+    uint256 rewardOwed = pendingRewards(account);
 
-    delete _rewardDebts[account];
-    _reward.mint(account, rewardOwed);
+    _rewardDebtPerShare[account] = _rewardPerShare;
+
+    if (rewardOwed > 0) {
+      _reward.mint(account, rewardOwed);
+    }
   }
 
   // @dev records deposited asset balance and updates total supply,
   // returns account's new balance.
   function _mintBalance(address account, uint256 amount) internal returns (uint256) {
-    if (_balances[account] == 0) {
-      _addStaker(account);
-    }
-
     unchecked {
       _balances[account] += amount;
       _totalSupply += amount;
@@ -209,29 +200,8 @@ contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
 
     if (_balances[account] == 0) {
       delete _balances[account];
-      _removeStaker(account);
     }
 
     return _balances[account];
-  }
-
-  // @dev adds new staker to tracking array and index map
-  function _addStaker(address account) internal {
-    require(account != address(0), "SaladBowl: zero address cannot be staker");
-    _stakerIndex[account] = _stakers.length;
-    _stakers.push(account);
-  }
-
-  // @dev remove given staker from tracking array and index map
-  function _removeStaker(address account) internal {
-    // @dev gas efficient method to remove element from array.
-    uint stakerIndex = _stakerIndex[account];
-    if (_stakers.length > 1) {
-      address substituteStaker = _stakers[_stakers.length - 1];
-      _stakers[stakerIndex] = substituteStaker;
-      _stakerIndex[substituteStaker] = stakerIndex;
-    }
-    delete _stakerIndex[account];
-    _stakers.pop();
   }
 }
