@@ -56,6 +56,7 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   // the balance of the staker. Any pending reward token is harvested
   // during the deposit.
   function deposit(uint256 amount) whenNotPaused nonReentrant public virtual {
+    require(amount > 0, "SaladBowl: deposit amount must be greater than zero");
     address account = _msgSender();
 
     _withdrawRewards(account);
