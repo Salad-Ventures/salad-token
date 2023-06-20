@@ -5,5 +5,4 @@ interface ISaladBowl {
   event Deposit(address indexed owner, uint256 amount, uint256 balance);
   event Withdraw(address indexed owner, uint256 amount, uint256 balance);
   event Harvest(address indexed owner, uint256 amount);
-  event SetRewardPerBlock(address indexed setter, uint256 rewardPerBlock);
 }

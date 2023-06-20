@@ -6,7 +6,15 @@ import { BigNumber } from "bignumber.js";
 run(async () => {
   const tokenContract = await deployContract("SaladToken");
   const rewardContract = await deployContract("SaladReward");
-  const bowlContract = await deployContract("SaladBowlP", tokenContract.address, rewardContract.address);
+  
+  const height = await ethers.provider.getBlockNumber();
+  const bowlContract = await deployContract("SaladBowl",
+    tokenContract.address,
+    rewardContract.address,
+    1e9,
+    height + 10,
+    height + 10 + 5000,
+  );
 
   const [owner, wallet1, wallet2] = await ethers.getSigners();
 

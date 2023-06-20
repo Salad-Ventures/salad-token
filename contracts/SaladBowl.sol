@@ -9,11 +9,10 @@ import "./ISaladReward.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
+contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
   using Math for uint256;
 
   uint256 private constant REWARD_PRECISION = 1e12;
@@ -25,7 +24,13 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   ISaladReward private immutable _reward;
 
   // total reward emission per block
-  uint256 public rewardPerBlock = 0;
+  uint256 public immutable rewardPerBlock;
+
+  // first block of reward emission
+  uint public immutable rewardStartBlock;
+
+  // last block of reward emission
+  uint public immutable rewardEndBlock;
 
   // last rewarded block
   uint public lastRewardBlock = 0;
@@ -45,17 +50,31 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   // reward owed to each staker up to lastRewardBlock
   mapping(address => uint256) private _rewardDebts;
 
-  constructor(IERC20 asset_, ISaladReward reward_) {
+  constructor(
+    IERC20 asset_, 
+    ISaladReward reward_,
+    uint256 rewardPerBlock_,
+    uint256 rewardStartBlock_,
+    uint256 rewardEndBlock_
+  ) {
     _asset = asset_;
     _reward = reward_;
 
     lastRewardBlock = block.number;
+
+    require(rewardStartBlock_ > block.number, "SaladBowl: rewardStartBlock must be greater than current block");
+    require(rewardEndBlock_ > rewardStartBlock_, "SaladBowl: rewardEndBlock must be greater than rewardStartBlock");
+    require(rewardPerBlock_ > 0, "SaladBowl: rewardPerBlock must be greater than zero");
+
+    rewardPerBlock = rewardPerBlock_;
+    rewardStartBlock = rewardStartBlock_;
+    rewardEndBlock = rewardEndBlock_;
   }
 
   // @dev deposits `amount` of underlying asset into vault and records
   // the balance of the staker. Any pending reward token is harvested
   // during the deposit.
-  function deposit(uint256 amount) whenNotPaused nonReentrant public virtual {
+  function deposit(uint256 amount) nonReentrant public virtual {
     require(amount > 0, "SaladBowl: deposit amount must be greater than zero");
     address account = _msgSender();
 
@@ -69,7 +88,7 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   // @dev withdraws `amount` of underlying asset from vault and updates
   // the balance of the staker. Any pending reward token is harvested
   // during the withdraw. 
-  function withdraw(uint256 amount) whenNotPaused nonReentrant public virtual {
+  function withdraw(uint256 amount) nonReentrant public virtual {
     address account = _msgSender();
 
     _withdrawRewards(account);
@@ -80,7 +99,7 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   }
 
   // @dev harvests all pending reward token for staker.
-  function harvest() whenNotPaused nonReentrant public virtual {
+  function harvest() nonReentrant public virtual {
     _withdrawRewards(_msgSender());
   }
 
@@ -118,41 +137,37 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
   }
 
   // @dev calculate and update every staker's reward debt up to current block,
-  // and updates `rewardPerBlock`.
-  function setRewardPerBlock(uint256 rewardPerBlock_) onlyOwner public {
-    _updateRewards();
-    rewardPerBlock = rewardPerBlock_;
-
-    emit SetRewardPerBlock(_msgSender(), rewardPerBlock);
-  }
-
-  // @dev contract pause unpause function by contract owner.
-  function setPause(bool pause) onlyOwner public {
-    if (pause) _pause();
-    else _unpause();
-  }
-
-  // @dev calculate and update every staker's reward debt up to current block,
   // and set `lastRewardBlock` to current block.
   function _updateRewards() internal {
     uint currentBlock = block.number;
 
-    // no need to update again if already done for the block.
-    if (lastRewardBlock == currentBlock) return;
+    if (
+      // skip update again if already done for the block.
+      lastRewardBlock == currentBlock 
+
+      // skip update if final reward emission already included
+      || lastRewardBlock >= rewardEndBlock
+
+      // skip update if reward not started
+      || currentBlock < rewardStartBlock
+    ) return;
+
+    uint rewardUntilBlock = Math.min(currentBlock, rewardEndBlock);
 
     // only update reward debts if necessary.
     if (rewardPerBlock > 0 && _totalSupply > 0) {
       uint length = _stakers.length;
+      uint blocks = rewardUntilBlock - Math.max(lastRewardBlock, rewardStartBlock);
+
       for (uint256 i = 0; i < length; i++) {
         uint256 balance = _balances[_stakers[i]];
         uint256 share = (balance * REWARD_PRECISION) / _totalSupply;
-        uint blocks = currentBlock - lastRewardBlock;
         uint256 rewards = (blocks * rewardPerBlock * share) / REWARD_PRECISION;
         _rewardDebts[_stakers[i]] += rewards;
       }
     }
 
-    lastRewardBlock = currentBlock;
+    lastRewardBlock = rewardUntilBlock;
   }
 
   // @dev updates reward debts and sends rewards owed to staker `account`.
