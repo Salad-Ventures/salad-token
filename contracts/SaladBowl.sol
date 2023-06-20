@@ -6,13 +6,13 @@ pragma solidity 0.8.18;
 import "./ISaladBowl.sol";
 import "./ISaladReward.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
-contract SaladBowl is ISaladBowl, Ownable, ReentrancyGuard {
+contract SaladBowl is ISaladBowl, Context, ReentrancyGuard {
   using Math for uint256;
 
   uint256 private constant REWARD_PRECISION = 1e12;
