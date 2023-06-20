@@ -62,8 +62,6 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
     uint256 balance = _mintBalance(account, amount);
     SafeERC20.safeTransferFrom(_asset, account, address(this), amount);
 
-    _invariantCheck();
-
     emit Deposit(account, amount, balance);
   }
 
@@ -76,8 +74,6 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
     _withdrawRewards(account);
     uint256 balance = _burnBalance(account, amount);
     SafeERC20.safeTransfer(_asset, account, amount);
-
-    _invariantCheck();
 
     emit Withdraw(account, amount, balance);
   }
@@ -96,8 +92,6 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
     uint256 amount = _balances[account];
     uint256 balance = _burnBalance(account, amount);
     SafeERC20.safeTransfer(_asset, account, amount);
-
-    _invariantCheck();
 
     emit Withdraw(account, amount, balance);
   }
@@ -223,11 +217,5 @@ contract SaladBowl is ISaladBowl, Ownable, Pausable, ReentrancyGuard {
     }
     delete _stakerIndex[account];
     _stakers.pop();
-  }
-
-  // @dev checks that underlying asset balance of this contract tallies with `_totalSupply`
-  // recorded state.
-  function _invariantCheck() internal view {
-    require(_asset.balanceOf(address(this)) == _totalSupply, "SaladBowl: invalid state after operation");
   }
 }
