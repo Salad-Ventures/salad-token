@@ -15,6 +15,8 @@ const config: HardhatUserConfig = {
     goerli: {
       url: process.env.RPC_URL_GOERLI,
       accounts,
+      gas: 2100000,
+      gasPrice: 8000000000
     },
   },
 };
