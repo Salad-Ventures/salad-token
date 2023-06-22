@@ -15,6 +15,10 @@ const config: HardhatUserConfig = {
     goerli: {
       url: process.env.RPC_URL_GOERLI,
       accounts,
+      throwOnTransactionFailures: true,
+      throwOnCallFailures: true,
+      allowUnlimitedContractSize: true,
+      timeout: 1800000
     },
   },
 };
